@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────
+#  만화 번역 웹앱 — Python 의존성
+#  ⚠️ torch/torchvision은 여기에 넣지 않는다. Colab에 CUDA 빌드가 사전설치됨.
+#     단, manga-ocr/paddleocr 설치가 torch를 CPU 버전으로 다운그레이드할 수 있으므로,
+#     설치 후 CUDA torch를 강제 재설치한다(노트북 3번 셀 참고):
+#     pip install torch torchvision --force-reinstall --no-deps --index-url .../cu124
+# ─────────────────────────────────────────────
+
+# --- 웹 서버 ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9        # 파일 업로드
+pydantic>=2.6
+pydantic-settings>=2.2
+
+# --- 터널링 ---
+pyngrok>=7.1
+
+# --- 비전 / 딥러닝 ---
+transformers>=4.40             # RT-DETR-v2 로딩
+manga-ocr>=0.1.11              # 일본어 OCR (kha-white/manga-ocr-base)
+paddleocr>=2.7                 # PP-OCRv5 (영/중)
+# paddlepaddle-gpu             # Colab GPU에서 PaddleOCR 백엔드 (환경에 맞춰 설치)
+iopaint>=1.3                   # LaMa(망가) 인페인팅 (구 lama-cleaner)
+opencv-python-headless>=4.9
+numpy>=1.26
+Pillow>=10.2
+# onnxruntime-gpu>=1.17        # (선택) 감지/OCR/인페인팅 ONNX 백엔드용 — 경량·고속
+
+# --- 번역 ---
+google-generativeai>=0.5       # Gemini 2.0 Flash
+
+# --- 유틸 ---
+huggingface-hub>=0.22
+python-dotenv>=1.0
+loguru>=0.7
