@@ -10,8 +10,8 @@ venv/
 .env
 *.key
 
-# 모델 가중치 (대용량)
-models/
+# 모델 가중치 (대용량) — 루트 models/ 만 제외 (app/models/ 소스코드는 포함)
+/models/
 !models/.gitkeep
 hf/
 
