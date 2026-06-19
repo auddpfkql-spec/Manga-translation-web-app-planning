@@ -32,6 +32,7 @@ Pillow>=10.2
 google-generativeai>=0.5       # Gemini 2.0 Flash
 
 # --- 유틸 ---
-huggingface-hub>=0.22
+huggingface-hub>=0.26,<1.0     # transformers 4.49 호환. hub 1.0+는 httpx 전환으로
+                               # 옛 allow_redirects 호출이 깨짐 (Client.head() TypeError)
 python-dotenv>=1.0
 loguru>=0.7
