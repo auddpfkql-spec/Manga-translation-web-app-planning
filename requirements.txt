@@ -17,7 +17,8 @@ pydantic-settings>=2.2
 pyngrok>=7.1
 
 # --- 비전 / 딥러닝 ---
-transformers>=4.40             # RT-DETR-v2 로딩
+transformers==4.49.0           # RT-DETR-v2 로딩. 최신판은 torch.float8_e8m0fnu(torch 2.7+)를 요구해
+                               # Colab의 torch 2.6(cu124)와 충돌 → 호환 버전으로 고정
 manga-ocr>=0.1.11              # 일본어 OCR (kha-white/manga-ocr-base)
 paddleocr>=2.7                 # PP-OCRv5 (영/중)
 # paddlepaddle-gpu             # Colab GPU에서 PaddleOCR 백엔드 (환경에 맞춰 설치)
