@@ -29,8 +29,17 @@ def _load_font(size: int, family: str | None) -> ImageFont.ImageFont:
     candidates: list[str] = []
     if family:
         candidates.append(family)
+    # 번들 폰트(fonts/) 우선 — Colab에서도 여기에 받아두면 잡힌다.
     candidates += sorted(glob.glob("fonts/*.ttf")) + sorted(glob.glob("fonts/*.otf"))
-    candidates += ["malgun.ttf", "NanumGothic.ttf", "C:/Windows/Fonts/malgun.ttf"]
+    # 시스템 한국어 폰트 (윈도우 + 리눅스/Colab 경로 모두 시도)
+    candidates += [
+        "malgun.ttf", "C:/Windows/Fonts/malgun.ttf",                    # Windows
+        "NanumGothic.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",             # apt fonts-nanum
+        "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",      # apt fonts-noto-cjk
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    ]
 
     font: ImageFont.ImageFont | None = None
     for path in candidates:
@@ -40,6 +49,8 @@ def _load_font(size: int, family: str | None) -> ImageFont.ImageFont:
         except Exception:
             continue
     if font is None:
+        # 한글 글리프가 없는 기본 폰트로 떨어지면 결과가 □(두부)가 된다.
+        # fonts/ 에 한국어 TTF 를 두거나 Colab 에서 fonts-nanum 설치를 권장.
         font = ImageFont.load_default()
 
     _FONT_CACHE[key] = font

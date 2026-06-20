@@ -58,17 +58,52 @@ def _run_manga_ocr(crop: Image.Image) -> str:
 
 
 def _run_ppocr(lang: str, crop: Image.Image) -> tuple[str, list[str]]:
-    """PP-OCRv5: numpy 배열 → (joined_text, lines)."""
+    """PP-OCRv5: numpy 배열 → (joined_text, lines).
+
+    PaddleOCR 2.x 와 3.x 의 호출/반환 형식이 달라 양쪽을 모두 처리한다.
+    형식을 알 수 없으면 크래시 대신 빈 결과를 돌려 요청 전체가 죽지 않게 한다.
+    """
     import numpy as np
     ocr = registry.ocr_ppocr(lang)
     arr = np.array(crop.convert("RGB"))
-    result = ocr.ocr(arr, cls=True)
-    if not result or not result[0]:
+
+    try:
+        result = ocr.ocr(arr)          # 3.x 는 cls 인자 제거 → 인자 없이 호출
+    except TypeError:
+        result = ocr.ocr(arr, cls=True)  # 2.x 호환
+    except Exception:
         return "", []
-    lines = [line[1][0] for line in result[0] if line and line[1] and line[1][0]]
+
+    lines = _extract_ppocr_lines(result)
     # 중국어/일본어는 공백 없이, 영어는 공백으로 이어붙임
     sep = "" if lang == "ch" else " "
     return sep.join(lines), lines
+
+
+def _extract_ppocr_lines(result) -> list[str]:
+    """PaddleOCR 결과에서 텍스트 줄만 추출 (2.x list / 3.x dict 형식 모두 대응)."""
+    if not result:
+        return []
+    page = result[0]
+    if page is None:
+        return []
+    # 3.x: dict 류(OCRResult) — rec_texts 키에 텍스트 리스트
+    if isinstance(page, dict):
+        return [t for t in page.get("rec_texts", []) if t]
+    if hasattr(page, "get"):
+        try:
+            return [t for t in page.get("rec_texts", []) if t]
+        except Exception:
+            pass
+    # 2.x: [[box, (text, score)], ...]
+    lines: list[str] = []
+    try:
+        for line in page:
+            if line and len(line) >= 2 and line[1] and line[1][0]:
+                lines.append(line[1][0])
+    except Exception:
+        return []
+    return lines
 
 
 def _estimate_direction(bbox: tuple[int, int, int, int]) -> Direction:

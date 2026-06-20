@@ -41,15 +41,26 @@ class ModelRegistry:
         return MangaOcr()
 
     def ocr_ppocr(self, lang: str):
-        """PaddleOCR PP-OCRv5 (lang='en'|'ch'). 언어별 인스턴스를 캐싱."""
+        """PaddleOCR PP-OCRv5 (lang='en'|'ch'). 언어별 인스턴스를 캐싱.
+
+        PaddleOCR 2.x / 3.x 의 생성자 인자가 다르다(3.x는 use_angle_cls·show_log 제거,
+        use_textline_orientation 사용). 버전에 따라 순서대로 시도해 호환을 흡수한다.
+        """
         cache = self.__dict__.setdefault("_ppocr_by_lang", {})
         if lang not in cache:
             from paddleocr import PaddleOCR
-            cache[lang] = PaddleOCR(
-                lang=lang,
-                use_angle_cls=True,
-                show_log=False,
-            )
+            for kwargs in (
+                {"lang": lang, "use_textline_orientation": True},          # 3.x (PP-OCRv5)
+                {"lang": lang, "use_angle_cls": True, "show_log": False},  # 2.x
+                {"lang": lang},                                            # 최소 인자
+            ):
+                try:
+                    cache[lang] = PaddleOCR(**kwargs)
+                    break
+                except TypeError:
+                    continue
+            else:
+                cache[lang] = PaddleOCR(lang=lang)
         return cache[lang]
 
     @cached_property
