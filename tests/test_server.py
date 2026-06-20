@@ -42,10 +42,10 @@ def test_frontend_served():
     assert "만화 번역기" in r.text
 
 
-def test_translate_wiring_reaches_pipeline():
-    """요청이 파일 업로드·옵션 파싱·큐·오케스트레이터를 거쳐 '첫 모델 스텁'까지
-    도달하는지(전 경로 배선) 확인. 모델 미구현이라 NotImplementedError(→500)가
-    나면 배선 OK — Phase 1 에서 스텁만 채우면 된다."""
+def test_translate_reports_failing_stage():
+    """요청이 전 경로(업로드·옵션·큐·오케스트레이터)를 거쳐 감지 단계까지 도달하고,
+    실패 시 **어느 단계에서 실패했는지**가 응답 본문에 담기는지 검증.
+    (로컬엔 torch 가 없어 detection 에서 모델 로드 실패 → stage='detection')"""
     import io
 
     from PIL import Image
@@ -59,4 +59,8 @@ def test_translate_wiring_reaches_pipeline():
         files={"file": ("t.png", buf.getvalue(), "image/png")},
         data={"options": '{"source_lang":"ja"}'},
     )
-    assert r.status_code == 500  # detection 스텁의 NotImplementedError 까지 도달
+    assert r.status_code == 500
+    body = r.json()
+    assert body["error"] == "pipeline_stage_failed"
+    assert body["stage"] == "detection"      # 실패 구간이 명시됨
+    assert "detail" in body                  # 원인 메시지 포함

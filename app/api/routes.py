@@ -9,13 +9,16 @@ manga-image-translator 의 요청 큐 패턴을 인프로세스로 단순화 —
 from __future__ import annotations
 
 import asyncio
+import traceback
 import uuid
 
 from fastapi import APIRouter, File, Form, UploadFile
-
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
 
-from app.pipeline.orchestrator import pipeline
+from loguru import logger
+
+from app.pipeline.orchestrator import pipeline, PipelineStageError
 from app.schemas.options import PipelineOptions
 from app.schemas.translation import SourceLang, TranslateResponse
 
@@ -63,5 +66,21 @@ async def translate(
                 options=opts,
                 request_id=request_id,
             )
+    except PipelineStageError as e:
+        # 어느 구간에서 실패했는지 응답 본문에 담아 돌려준다 (노트북 r.text 에서 바로 확인)
+        logger.error(f"[{request_id}] '{e.stage}' 단계 실패\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={
+            "error": "pipeline_stage_failed",
+            "stage": e.stage,
+            "detail": f"{type(e.original).__name__}: {e.original}",
+            "request_id": request_id,
+        })
+    except Exception as e:
+        logger.error(f"[{request_id}] 알 수 없는 오류\n{traceback.format_exc()}")
+        return JSONResponse(status_code=500, content={
+            "error": "internal_error",
+            "detail": f"{type(e).__name__}: {e}",
+            "request_id": request_id,
+        })
     finally:
         _waiting -= 1
